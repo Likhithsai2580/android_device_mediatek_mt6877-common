@@ -1,0 +1,50 @@
+LOCAL_PATH := device/mediatek/mt6877-common
+
+include $(CLEAR_VARS)
+
+# VINTF fragment shipped with the platform. Only declares the SoC-level
+# interfaces that are true of every mt6877 device; a device tree adds its own
+# fragments for camera/sensors.
+#
+# INTENTIONALLY NOT WRITTEN YET. A VINTF manifest that declares a HAL the
+# device does not ship causes a boot-time HAL crash, and one that omits a HAL
+# the device does ship causes an immediate service-not-found. Both look like
+# "random" boot failures and cost days to diagnose.
+#
+# The correct content is derivable -- `ls /vendor/lib64/hw` plus
+# `/vendor/etc/vintf/manifest.xml` from a stock device gives the exact list --
+# but it is derived per DEVICE, not per SoC, because which HALs are enabled is
+# a vendor decision. Writing a plausible-looking manifest now would be a guess
+# with a bootloop attached.
+#
+# TODO(porter): generate from the device's stock manifest, then split into
+# platform-level (this file) and device-level fragments.
+
+module {
+    name: "mt6877.vintf",
+    src: {
+        "manifest.xml": ["vintf/manifest.xml"],
+    },
+    product: {
+        "*.xml": {
+            "container": "framework",
+            "product": "mt6877",
+        },
+    },
+    proprietary: true,
+}
+
+module {
+    name: "mt6877.init.rc",
+    src: {
+        "init.mt6877.rc": ["init.mt6877.rc"],
+    },
+    product: {
+        "*.rc": {
+            "filename": "init.mt6877.rc",
+            "mount": "vendor",
+            "sub_dir": "etc/init",
+        },
+    },
+    proprietary: true,
+}

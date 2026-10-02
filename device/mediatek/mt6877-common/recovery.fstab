@@ -1,0 +1,38 @@
+# fstab for the mt6877 platform (common to all mt6877 devices).
+#
+# Reconstruction of the realme 11 Pro 5G stock fstab, reduced to what is true of
+# the platform. Source: /vendor/etc/fstab on the device, plus the EROFS
+# odm/etc/oplus.fstab from the stock A13 OTA.
+#
+# WHAT IS PLATFORM vs WHAT IS DEVICE
+#   platform: the logical partition layout (system/vendor/product/odm/system_ext)
+#             and the first-stage mount flags.
+#   device:   partition SIZES, the super group name, the AVB pubkey path, and
+#             any device-specific mount (nvdata, protect1/2, persist...).
+# Those device-specific lines are deliberately NOT here. Copy the device's own
+# fstab in, do not inherit one.
+#
+# Two realme specifics that are NOT platform facts and are therefore absent:
+#   * the my_* regional logical partitions (my_company, my_region, my_heytap,
+#     my_carrier, ...) -- an OPPO/realme regional split, not a chipset trait
+#   * /mnt/vendor/protect1, protect2, nvdata, nvcfg -- realme security storage
+
+system        /system        ext4  ro,barrier=1  wait,logical,first_stage_mount
+vendor        /vendor        ext4  ro,barrier=1  wait,logical,first_stage_mount
+product       /product       ext4  ro,barrier=1  wait,logical,first_stage_mount
+system_ext    /system_ext    ext4  ro,barrier=1  wait,logical,first_stage_mount
+odm           /odm           ext4  ro,barrier=1  wait,logical,first_stage_mount
+
+# The stock A13 images are EROFS (magic 0xe0f5e1e2), not ext4. The platform
+# ships ext4 lines because that is what an AOSP-built super uses; a device that
+# mounts the stock EROFS partitions instead overrides this file with its own.
+
+# Device-specific mount points. Each device tree supplies these; they are listed
+# here only as a checklist of what a device fstab is likely to need, NOT as
+# active lines:
+#   /dev/block/by-name/metadata    /metadata
+#   /dev/block/by-name/userdata     /data         (f2fs on this device)
+#   /dev/block/by-name/nvdata       /mnt/vendor/nvdata
+#   /dev/block/by-name/protect1     /mnt/vendor/protect_f
+#   /dev/block/by-name/protect2     /mnt/vendor/protect_s
+#   /dev/block/by-name/persist      /mnt/vendor/persist

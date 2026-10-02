@@ -1,0 +1,34 @@
+# LineageOS dependencies for the mt6877 platform.
+#
+# HONEST STATE: this tree is NOT buildable yet and this file does not pretend
+# otherwise. Every entry below is a REAL, EXISTING repository, because an
+# invented dependency fails `breakfast` and CI while hiding the actual gap.
+#
+# What exists and is listed, versus what does not and is named in README.md.
+
+# --- hardware: MediaTek (real, used for the SoC HALs) ----------------------
+android_hardware_mediatek
+android_device_mediatek_sepolicy_vndr
+
+# --- hardware: AISP / MTK media (real, needed for camera/audio on MTK) ----
+# Listed for reference. A porting device only inherits this if it wires in
+# MediaTek's camera/audio stack rather than AOSP's.
+hardware_mediatek
+
+# --- device: this repository ------------------------------------------------
+# (the mt6877 platform tree itself)
+
+# --- vendor -----------------------------------------------------------------
+# NOT LISTED, because it does not exist: vendor_mediatek_mt6877-common
+# must be created. This is one of the two real walls -- see README.md.
+
+# --- kernel -----------------------------------------------------------------
+# NOT LISTED, and cannot be. The device runs kernel 4.19.191+ and realme
+# published no 4.19 device tree (their kernel-4.19 directory has 4 files and
+# zero .dts). So there is no kernel repo to depend on; the platform ships a
+# PREBUILT kernel instead (TARGET_PREBUILT_KERNEL in BoardConfigCommon.mk).
+#
+# The 6.6 tree DOES exist and DOES compile, but the device does not run it.
+# If the device is ever updated to A15, this dependency becomes:
+#   kernel_mediatek_mt6877-common-6.6
+# and the prebuilt goes away. Worth knowing before investing in A13-era work.

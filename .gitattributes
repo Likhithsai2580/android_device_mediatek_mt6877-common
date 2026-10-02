@@ -1,0 +1,14 @@
+# Keep shell scripts LF: they are run under bash/WSL, and CRLF breaks them.
+*.sh text eol=lf
+*.py text eol=lf
+*.mk text eol=lf
+*.bp text eol=lf
+*.xml text eol=lf
+*.txt text eol=lf
+*.md text eol=lf
+
+# Prebuilt blobs must never be line-ending translated.
+*.dtb binary
+*.dtbo binary
+*.img binary
+Image binary
