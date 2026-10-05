@@ -123,6 +123,19 @@ active "$ROOT/BoardConfigCommon.mk" | grep -q 'BOARD_KERNEL_PAGESIZE := 4096' \
 active "$ROOT/BoardConfigCommon.mk" | grep -q 'BOARD_VENDOR_BOOT_HEADER_VERSION := 4' \
   && ok "BOARD_VENDOR_BOOT_HEADER_VERSION := 4 (vendor_boot exists on A15)" \
   || bad "BOARD_VENDOR_BOOT_HEADER_VERSION is not 4"
+active "$ROOT/mt6877.mk" | grep -q 'TARGET_USES_GKI_KERNEL := true' \
+  && ok "TARGET_USES_GKI_KERNEL := true (A15 is GKI)" \
+  || bad "mt6877.mk TARGET_USES_GKI_KERNEL is not true"
+# BOARD_USES_GENERIC_KERNEL must appear in exactly ONE file: two assignments can
+# disagree and the later include silently wins.
+N_GKI=$(active "$ROOT/mt6877.mk" "$ROOT/mt6877-common.mk" "$ROOT/BoardConfigCommon.mk" \
+        | grep -c 'BOARD_USES_GENERIC_KERNEL')
+[ "$N_GKI" -eq 1 ] \
+  && ok "BOARD_USES_GENERIC_KERNEL assigned exactly once" \
+  || bad "BOARD_USES_GENERIC_KERNEL assigned $N_GKI times (must be 1)"
+active "$ROOT/mt6877.mk" | grep -q 'TARGET_GPU_ARCH := valhall' \
+  && ok "GPU arch recorded as valhall (measured from the live DT compatible)" \
+  || bad "mt6877.mk does not record the measured Valhall GPU arch"
 
 echo
 echo "== 9. no VINTF manifest was guessed =="

@@ -23,12 +23,17 @@ hardware_mediatek
 # must be created. This is one of the two real walls -- see README.md.
 
 # --- kernel -----------------------------------------------------------------
-# NOT LISTED, and cannot be. The device runs kernel 4.19.191+ and realme
-# published no 4.19 device tree (their kernel-4.19 directory has 4 files and
-# zero .dts). So there is no kernel repo to depend on; the platform ships a
-# PREBUILT kernel instead (TARGET_PREBUILT_KERNEL in BoardConfigCommon.mk).
+# A15 is GKI and realme PUBLISHED the 6.6 tree, so a kernel dependency is now
+# POSSIBLE where on A13 it was not. The source lives at:
+#   github.com/realme-kernel-opensource/
+#     realme_narzo70_..._AndroidV-kernel-source   (kernel 6.6.30, builds)
 #
-# The 6.6 tree DOES exist and DOES compile, but the device does not run it.
-# If the device is ever updated to A15, this dependency becomes:
-#   kernel_mediatek_mt6877-common-6.6
-# and the prebuilt goes away. Worth knowing before investing in A13-era work.
+# NOT LISTED YET because the Lineage-style repo it would resolve to does not
+# exist: someone has to create kernel_mediatek_mt6877-common (or point
+# TARGET_KERNEL_SOURCE at a local copy). Listing a name that does not resolve
+# fails `breakfast` and hides the real gap.
+#
+# A13 contrast (still true for an A13 port): that build ran 4.19.191+ and realme
+# published no 4.19 device tree (their kernel-4.19 dir holds 4 files and zero
+# .dts), so an A13 port has no kernel repo to depend on at all and must ship a
+# PREBUILT (TARGET_PREBUILT_KERNEL). A15 removes that constraint.

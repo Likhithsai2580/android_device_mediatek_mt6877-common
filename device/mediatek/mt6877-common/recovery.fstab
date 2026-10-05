@@ -1,8 +1,8 @@
 # fstab for the mt6877 platform (common to all mt6877 devices).
 #
 # Reconstruction of the realme 11 Pro 5G stock fstab, reduced to what is true of
-# the platform. Source: /vendor/etc/fstab on the device, plus the EROFS
-# odm/etc/oplus.fstab from the stock A13 OTA.
+# the platform. Sources: the live A15 device's /vendor/etc/fstab.mt6877, the
+# live mount table, and the EROFS odm/etc/oplus.fstab from the stock A13 OTA.
 #
 # WHAT IS PLATFORM vs WHAT IS DEVICE
 #   platform: the logical partition layout (system/vendor/product/odm/system_ext)
@@ -23,9 +23,28 @@ product       /product       ext4  ro,barrier=1  wait,logical,first_stage_mount
 system_ext    /system_ext    ext4  ro,barrier=1  wait,logical,first_stage_mount
 odm           /odm           ext4  ro,barrier=1  wait,logical,first_stage_mount
 
-# The stock A13 images are EROFS (magic 0xe0f5e1e2), not ext4. The platform
-# ships ext4 lines because that is what an AOSP-built super uses; a device that
-# mounts the stock EROFS partitions instead overrides this file with its own.
+# The stock images are EROFS on BOTH A13 and A15 (verified: on the live A15
+# device /vendor, /product, /system_ext and /odm all mount as `erofs`, and the
+# system partition is erofs on /). The platform ships ext4 lines because that is
+# what an AOSP-built super uses; a device that mounts the stock EROFS partitions
+# instead overrides this file with its own.
+#
+# The stock fstab (/vendor/etc/fstab.mt6877) lists BOTH variants per partition,
+# erofs first then ext4, with the flags:
+#   system     wait,slotselect,avb=vbmeta_system,logical,first_stage_mount,
+#              avb_keys=/avb/q-gsi.avbpubkey:/avb/r-gsi.avbpubkey:/avb/s-gsi.avbpubkey
+#   vendor     wait,slotselect,avb,logical,first_stage_mount
+#   product    wait,slotselect,avb,logical,first_stage_mount
+#   system_ext wait,slotselect,avb,logical,first_stage_mount
+#   odm        wait,slotselect,logical,first_stage_mount,
+#              avb_keys=/vendor/etc/oplus_avb.pubkey
+#
+# NOTE for anyone testing a GSI: the device ships GSI AVB keys
+# (/avb/{q,r,s}-gsi.avbpubkey) on the system line, so a signed GSI can satisfy
+# AVB without disabling verification. That is a real, measured fact about this
+# platform and it is why a GSI test is cheap here.
+#
+# /data is f2fs (measured on the live device), /metadata is ext4.
 
 # Device-specific mount points. Each device tree supplies these; they are listed
 # here only as a checklist of what a device fstab is likely to need, NOT as
