@@ -39,10 +39,24 @@ odm           /odm           ext4  ro,barrier=1  wait,logical,first_stage_mount
 #   odm        wait,slotselect,logical,first_stage_mount,
 #              avb_keys=/vendor/etc/oplus_avb.pubkey
 #
-# NOTE for anyone testing a GSI: the device ships GSI AVB keys
-# (/avb/{q,r,s}-gsi.avbpubkey) on the system line, so a signed GSI can satisfy
-# AVB without disabling verification. That is a real, measured fact about this
-# platform and it is why a GSI test is cheap here.
+# NOTE for anyone testing a GSI: the system line REFERENCES GSI AVB keys
+# (/avb/{q,r,s}-gsi.avbpubkey) but they are NOT PRESENT. Verified by extracting
+# both ramdisks: the vendor ramdisk holds only first_stage_ramdisk/fstab.mt6877
+# and lib/modules/*.ko (225 modules), and the init_boot ramdisk holds only the
+# GKI generic ramdisk plus Magisk's overlay.d/sbin/*.xz. There is no /avb
+# directory in either. So a GSI will NOT satisfy AVB through those keys -- the
+# line is MTK fstab boilerplate for a key set this build does not ship.
+#
+# The odm key IS real: /vendor/etc/oplus_avb.pubkey exists (520 bytes).
+#
+# Practical consequence: a GSI test here needs verification disabled
+# (fastboot --disable-verification) or a GSI signed with a key the device
+# actually trusts. The unlocked bootloader makes that possible, but do not
+# expect the stock AVB chain to accept an arbitrary GSI.
+#
+# The 225 modules in vendor_boot/lib/modules are the other thing worth knowing:
+# on this platform the kernel modules ship INSIDE vendor_boot, not as a separate
+# partition, which is why CONFIG_MODULES matters for any kernel rebuild.
 #
 # /data is f2fs (measured on the live device), /metadata is ext4.
 
