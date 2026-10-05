@@ -98,11 +98,31 @@ done < "$ROOT/lineage.dependencies"
 
 echo
 echo "== 8. the honest gaps are still documented =="
-for pat in "No kernel source exists" "vendor tree does not exist" "sepolicy"; do
+# These are the gaps that remain TRUE. 'No kernel source exists' was removed
+# because A15 (6.6) is published and builds -- asserting it now would be the
+# same error in the opposite direction.
+for pat in "cust.dtsi" "vendor tree does not exist" "sepolicy"; do
   grep -qi "$pat" "$ROOT/README.md" 2>/dev/null \
     && ok "README still documents: $pat" \
     || bad "README no longer documents: $pat"
 done
+
+echo
+echo "== 8b. A15/GKI platform facts are self-consistent =="
+# Measured from a live A15 device: GKI, boot header v4, 4K pages. If someone
+# reverts these to A13 values (non-GKI / header v0), every A15 device breaks.
+active "$ROOT/BoardConfigCommon.mk" | grep -q 'BOARD_USES_GENERIC_KERNEL := true' \
+  && ok "BOARD_USES_GENERIC_KERNEL := true (A15 is GKI)" \
+  || bad "BOARD_USES_GENERIC_KERNEL is not true -- A15 on this platform is GKI"
+active "$ROOT/BoardConfigCommon.mk" | grep -q 'BOARD_BOOT_HEADER_VERSION := 4' \
+  && ok "BOARD_BOOT_HEADER_VERSION := 4 (measured)" \
+  || bad "BOARD_BOOT_HEADER_VERSION is not 4"
+active "$ROOT/BoardConfigCommon.mk" | grep -q 'BOARD_KERNEL_PAGESIZE := 4096' \
+  && ok "BOARD_KERNEL_PAGESIZE := 4096 (matches ARM64_4K_PAGES)" \
+  || bad "BOARD_KERNEL_PAGESIZE is not 4096"
+active "$ROOT/BoardConfigCommon.mk" | grep -q 'BOARD_VENDOR_BOOT_HEADER_VERSION := 4' \
+  && ok "BOARD_VENDOR_BOOT_HEADER_VERSION := 4 (vendor_boot exists on A15)" \
+  || bad "BOARD_VENDOR_BOOT_HEADER_VERSION is not 4"
 
 echo
 echo "== 9. no VINTF manifest was guessed =="

@@ -10,11 +10,32 @@
 DEVICE_PATH := device/mediatek/mt6877-common
 
 # ---- Kernel ---------------------------------------------------------------
-# Non-GKI, kernel 4.19.191+ (2023-09-13). No public 4.19 DTS exists from
-# realme, so the kernel is a PREBUILT. Override TARGET_PREBUILT_KERNEL in the
-# device tree to point at your own prebuilts dir.
+# A15 (Android 15) on this platform is GKI: Linux 6.6, boot header v4, and the
+# kernel image is built from PUBLISHED source.
+#
+# Measured on a realme 11 Pro 5G running RMX3771_15.0.0.600(EX01):
+#   boot_a        header_version=4  kernel_size=14,678,442  ramdisk_size=0
+#                 (ramdisk_size 0 is the GKI signature -- the ramdisk lives in
+#                  vendor_boot, not boot)
+#   vendor_boot_a header_version=4  page_size=4096  vendor_ramdisk_size=40,272,743
+#   uname -r      6.6.30-android15-8-o-gbf7a50923577-4k
+#
+# The published 6.6 source builds standalone (see the device tree's
+# docs/KERNEL_BUILD_SUCCESS.md), but its correct home is a Lineage tree with MTK
+# kleaf, not a standalone flash.
+BOARD_USES_GENERIC_KERNEL := true
 BOARD_KERNEL_IMAGE_NAME := Image
-BOARD_USES_GENERIC_KERNEL := false
+BOARD_KERNEL_PAGESIZE := 4096
+BOARD_BOOT_HEADER_VERSION := 4
+BOARD_VENDOR_BOOT_HEADER_VERSION := 4
+BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT := true
+
+# A13 note (still accurate FOR AN A13 PORT): that build was NON-GKI, Linux
+# 4.19.191+, and realme published no 4.19 device tree, so an A13 port ships a
+# PREBUILT kernel via TARGET_PREBUILT_KERNEL. Do not set
+# BOARD_USES_GENERIC_KERNEL := false here to accommodate it -- override per
+# device, because GKI is the platform default on A15 and flipping it in common
+# would misconfigure every A15 device.
 
 # ---- Kernel command line --------------------------------------------------
 # SoC-level only. The device tree adds its own hardware-specific flags.
@@ -63,9 +84,14 @@ BOARD_AVB_HASHTREE_DISABLE := false
 BOARD_USES_METADATA_PARTITION := true
 
 # ---- Not set here (deliberately) ------------------------------------------
-# TARGET_BOOTIMAGE_PARTITION_SIZE / BOARD_DTBOIMG_PARTITION_SIZE: these differ
-#   per device. The measured realme values (40 MiB / 1.61 MiB) are NOT SoC
-#   facts and must not be inherited by an unrelated mt6877 phone.
+# Partition SIZES: these differ per device. Measured realme values are NOT SoC
+#   facts and must not be inherited by an unrelated mt6877 phone. From the live
+#   A15 device (blockdev --getsize64):
+#     boot        41,943,040  (40 MiB)
+#     init_boot    8,388,608  ( 8 MiB)
+#     vendor_boot 67,108,864  (64 MiB)
+#     dtbo         8,388,608  ( 8 MiB)
+#   A device tree sets BOARD_BOOTIMAGE_PARTITION_SIZE and friends itself.
 # BOARD_KERNEL_CMDLINE device-specific flags (panel, touch, camera): same.
 # BOARD_PHYSICAL_PARTITION: varies by device storage layout.
 # BOARD_VNDK_VERSION: tied to the target Android version, not the SoC.

@@ -24,21 +24,39 @@ can be written by inspection. Two are hard blockers.
 
 ## The two walls
 
-### 1. No kernel source exists
+### 1. Kernel source — RESOLVED on A15, and this device runs A15
 
 ```
-device kernel        4.19.191+   (built 2023-09-13, adb shell uname -r)
-realme AndroidV src  kernel-6.6  → compiles; we built it
-                    kernel-4.19 → 4 files, ZERO .dts/.dtsi
+A15 device kernel     6.6.30-android15-8-o-gbf7a50923577-4k   (adb shell uname -r)
+realme AndroidV src   kernel-6.6  -> published AND builds; Image produced
+A13 device kernel     4.19.191+   -> realme published NO 4.19 device tree
 ```
 
-**realme published no 4.19 device tree.** The kernel the phone runs cannot be
-rebuilt from public source. This platform therefore ships a **prebuilt kernel**
-(`TARGET_PREBUILT_KERNEL`). This is realme's omission, not a research gap, and
-no amount of effort substitutes for the missing artifact.
+**The phone has been updated to A15, so the old wall is gone.** The 6.6 tree is
+published, compiles with a stock aarch64 cross-toolchain, and a generic GKI
+`Image` has been built and verified (36,870,656 B, `ARMd` magic, banner
+`Linux version 6.6.30-4k`). See the device tree's
+`docs/KERNEL_BUILD_SUCCESS.md`.
 
-If the device is ever updated to **A15**, this changes: the 6.6 tree is
-published and compiles, so a source-built kernel becomes possible.
+This matters for more than convenience: the LineageOS charter says *non-GKI
+devices MUST NOT ship a prebuilt kernel*. The A13 configuration could not meet
+that requirement from public source. **A15 can** — which is why A15 is the port
+target.
+
+The A13 route remains what it was: `TARGET_PREBUILT_KERNEL`, a portability
+necessity rather than a choice. Do not describe it as the platform's situation
+any more; it is one device's situation if that device is left on A13.
+
+### 1b. The remaining device-tree gap: `cust.dtsi` is referenced but not published
+
+Not a kernel wall, but the same shape. realme's `oplus6877_22712.dts` includes
+`<oplus6877_22712/cust.dtsi>`, a file **absent from the published tree**, and
+`k6877v1_64.dts` ends with its `cust.dtsi` / touch / camera includes commented
+out. Consequence: the published source reproduces **95.3%** of the live A15
+device tree, and the residual 16 nodes (camera, NFC, LCD bias, charge pump,
+`oplus,mm_config`) come from that one omission. The stock binary DTBO is the
+authoritative artifact for those nodes. Full analysis in the device tree's
+`docs/A15_SOURCE_VS_LIVE_DTB.md`.
 
 ### 2. The vendor tree does not exist
 
@@ -122,13 +140,14 @@ says:
 
 > Non-GKI devices MUST NOT ship a prebuilt kernel.
 
-This device is non-GKI and cannot build its kernel from public source, so
-`TARGET_PREBUILT_KERNEL` is a **portability necessity, not a choice**. It is
-fine for an unofficial port and is a blocker for official LineageOS support.
-Worth knowing before investing heavily: if official support is the goal, the
-device would have to move to a kernel realme published source for (i.e. A15 /
-6.6), because that is the only configuration where the charter requirement can
-be met.
+An **A13** port cannot satisfy that from public source (no 4.19 device tree was
+published), so `TARGET_PREBUILT_KERNEL` there is a **portability necessity, not a
+choice** — fine for an unofficial port, a blocker for official support.
+
+**On A15 the requirement is satisfiable**: the 6.6 tree is published, it builds,
+and the platform is GKI. That is the concrete reason A15 is the port target
+rather than a preference. If official LineageOS support is the goal, A15 is the
+only configuration that can meet the charter.
 
 Per AOSP, `TARGET_PREBUILT_KERNEL` works for `make bootimage` on any device,
 and for devices without `init_boot` you need a ramdisk — this device **has**
