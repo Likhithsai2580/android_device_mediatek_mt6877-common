@@ -24,8 +24,8 @@ things that can be written by inspection. Two are hard blockers.
 | `Android.mk` | **empty on purpose** |
 | `lineage.dependencies` | lists only real repos; names the missing ones |
 | `vintf/manifest.xml` | **done** — 18 fragments merged verbatim from stock A15 |
-| `Android.bp` | `mt6877.vintf` bound to the real manifest |
-| `init.mt6877.rc` | not present — `Android.bp` still references it; see next steps
+| `Android.bp` | `mt6877.vintf` bound to the real manifest; `init.mt6877.rc` module commented out on purpose |
+| `init.mt6877.rc` | **deliberately absent** — stock's file is vendor-tree content; see below |
 
 ## The two walls
 
@@ -93,8 +93,31 @@ The split it embodies is the platform-vs-device one the warning was really about
     Those live in `/odm/etc/vintf/manifest` — they are DEVICE-level, so a device
     tree supplies them, never this common manifest.
 
-`Android.bp` now binds `mt6877.vintf` to that manifest. `init.mt6877.rc` is still
-referenced by the same `.bp` but intentionally missing — see next steps.
+`Android.bp` now binds `mt6877.vintf` to that manifest.
+
+## `init.mt6877.rc` — deliberately absent, and that is the correct state
+
+The stock tree ships `/vendor/etc/init/hw/init.mt6877.rc` (1,168 lines) and it was
+examined before deciding. It does **not** belong here:
+
+1. It declares only **7 services, all of which exec a `/vendor/bin` binary**
+   (`swap_enable_init`, `readahead_init` → `/vendor/bin/swap_enable.sh`; plus
+   `bugreport`, `meta_tst`, `factory_no_image`, `osi`, `fuelgauged(_nvram)`). A
+   `device/` tree cannot ship `/vendor/bin/*` — those come from the vendor tree.
+   Copying the file here would mount a set of dangling execs.
+2. **56 of its lines are realme/OPPO device policy, not SoC policy** — a ~50-line
+   `/sys/kernel/oplus_display/*` chown/chmod block, MIDAS `/dev/midas_dev`, and
+   `sys.oplus.bootupgrade` cpufreq limiting. Putting those in a *common* tree
+   forces them on every mt6877 phone, which is the exact mistake this tree exists
+   to prevent.
+3. It **imports two files that do not exist on the device** (`init.volte.rc`,
+   `init.mal.rc`), so it is already partly stale in stock and depends on the
+   vendor tree's layout.
+
+The genuinely platform-level content is thin — `boot_dramboost`, cpuset cgroup
+writes, and the `sysctl` rmem/wmem bumps — and is cheap to re-add once a build
+asks for it. The `mt6877.init.rc` module in `Android.bp` is therefore commented
+out rather than left referencing a non-existent source.
 
 ## Facts this tree is built on
 
@@ -141,9 +164,10 @@ realme security storage, device-specific.
 2. **Generate the VINTF manifest** from a stock device — **done** (this tree's
    `vintf/manifest.xml`). What remains is the per-device odm fragments, which
    the RMX3771 device tree supplies.
-3. **Provide `init.mt6877.rc`** or remove its reference from `Android.bp`. The
-   stock early-init is the source; an empty stub is enough to unblock a first
-   build and can be filled from `vendor/etc/init/*.rc` pulled from the device.
+3. **(RESOLVED — no file needed)** `init.mt6877.rc` is deliberately absent; the
+   stock file is vendor-tree content with realme pollution. See the section
+   above. Rationale recorded in `Android.bp`; re-add only when the vendor tree
+   exists.
 4. **Build `vendor_mediatek_mt6877-common`.** Start with the fstab and the mk
    files; sepolicy last, and only what the build actually asks for.
 5. **Port the device tree (RMX3771).** With the platform tree solid, this is the

@@ -5,7 +5,7 @@
 
         This file is a VERBATIM MERGE of the 18 vendor-side VINTF fragments
         pulled from a realme 11 Pro 5G stock device (/vendor/etc/vintf/manifest/*.xml)
-        that are true of the CHIPSET -- i.e. MediaTek-named HALs and the standard
+        that are true of the CHIPSET, i.e. MediaTek-named HALs and the standard
         AOSP HALs the mt6877 provides. Every <hal> block below is copied as-is
         from one of those files (name / version / fqname / interface / format);
         nothing was invented, nothing was dropped, the count matches the 18
@@ -37,7 +37,7 @@
             A port pulls them from the device tree, never from this manifest.
           - android.hardware.camera.provider. Stock uses realme's own
             proprietary provider (android.hardware.camera.provider@2.6-impl-
-            mediatek.so, confirmed reachable -- the GSI camera works through it).
+            mediatek.so, confirmed reachable: the GSI camera works through it).
             Wiring AOSP's provider is per-device work with real bring-up cost;
             do not declare it at the platform level.
 
@@ -50,7 +50,7 @@
           - mapper uses format="native" with a single <fqname>@5.0/mediatek</>.
             Kept as copied.
           - mtk_lbs_service exposes 21 fqnames (ILbs/* instances). Kept
-            verbatim -- do not collapse.
+            verbatim; do not collapse.
 
         Regeneration procedure for future maintainers:
             adb shell 'cat /vendor/etc/vintf/manifest/*.xml'

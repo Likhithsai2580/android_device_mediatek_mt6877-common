@@ -138,14 +138,66 @@ active "$ROOT/mt6877.mk" | grep -q 'TARGET_GPU_ARCH := valhall' \
   || bad "mt6877.mk does not record the measured Valhall GPU arch"
 
 echo
-echo "== 9. no VINTF manifest was guessed =="
-# A wrong manifest is a bootloop, so an absent one must stay absent until it is
-# derived from a real device.
-if [ -f "$ROOT/vintf/manifest.xml" ]; then
-  bad "vintf/manifest.xml EXISTS -- was it derived from a real device?"
+echo "== 9. the VINTF manifest is EVIDENCE-BASED, not guessed =="
+# A wrong manifest is a bootloop, so the rule is not "absent" -- it is "derived
+# from a real device". The manifest now exists and must prove provenance and
+# stay free of device-level HALs.
+V="$ROOT/vintf/manifest.xml"
+if [ ! -f "$V" ]; then
+  bad "vintf/manifest.xml is missing (it is generated and should be present)"
 else
-  ok "no guessed VINTF manifest present"
+  ok "vintf/manifest.xml present"
+  # (a) provenance: the header must name the real source and say verbatim.
+  grep -q 'VERBATIM MERGE' "$V" \
+    && ok "manifest states it is a verbatim merge (not freehand)" \
+    || bad "manifest does not state verbatim-merge provenance"
+  grep -qi '/vendor/etc/vintf' "$V" \
+    && ok "manifest names its real source path" \
+    || bad "manifest does not name the device source path"
+  # (b) no device-level HALs leaked in. com.oplus.* / camera.provider belong to
+  #     the DEVICE tree (they live in /odm/etc/vintf on stock).
+  if grep -qE '<name>(com\.oplus|android\.hardware\.camera\.provider)' "$V"; then
+    bad "device-level HAL found in the platform manifest (com.oplus / camera.provider)"
+  else
+    ok "no device-level HAL (com.oplus.* / camera.provider) in the platform manifest"
+  fi
+  # (c) it must actually declare platform HALs -- an empty-but-present file would
+  #     pass everything above and mean nothing.
+  N=$(grep -c '<hal format=' "$V")
+  [ "$N" -ge 15 ] \
+    && ok "manifest declares $N <hal> blocks (matches the 18 source fragments)" \
+    || bad "manifest declares only $N <hal> blocks -- too few to be the real merge"
+  # (d) the MediaTek HALs that make it a PLATFORM manifest must be there.
+  for h in vendor.mediatek.hardware.mtkpower android.hardware.thermal \
+           vendor.mediatek.hardware.lbs; do
+    grep -q "<name>$h</name>" "$V" \
+      && ok "platform HAL present: $h" || bad "platform HAL missing: $h"
+  done
+  # (e) it must be WELL-FORMED XML. This is not pedantry: '--' is illegal inside
+  #     an XML comment, so prose em-dashes silently make the file invalid, and
+  #     VINTF would reject it at build time with a less obvious error.
+  if command -v python >/dev/null 2>&1; then
+    python -c "import xml.etree.ElementTree as E;E.parse('$V')" 2>/dev/null \
+      && ok "manifest is well-formed XML" \
+      || bad "manifest is NOT well-formed XML (check for '--' inside comments)"
+  else
+    ok "python unavailable; skipped XML well-formedness check"
+  fi
 fi
+
+echo
+echo "== 9b. init.mt6877.rc is deliberately absent, with the reason recorded =="
+# Stock's init.mt6877.rc is vendor-tree content (all its services exec
+# /vendor/bin/*) laced with realme policy (oplus_display, midas). Copying it
+# here would be a dead file. The .bp module must be commented out, not dangling.
+if [ -f "$ROOT/init.mt6877.rc" ]; then
+  bad "init.mt6877.rc was added -- see Android.bp; it is vendor-tree content"
+else
+  ok "init.mt6877.rc absent (correct)"
+fi
+grep -qE '^[[:space:]]*# module \{' "$ROOT/Android.bp" \
+  && ok "mt6877.init.rc module is commented out in Android.bp" \
+  || bad "Android.bp may reference an init.mt6877.rc that does not exist"
 
 echo
 [ "$FAIL" -eq 0 ] && echo "PLATFORM CHECK: ALL PASS" || echo "PLATFORM CHECK: $FAIL FAILED"

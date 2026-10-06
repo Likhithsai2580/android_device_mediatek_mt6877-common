@@ -24,17 +24,47 @@ module {
     proprietary: true,
 }
 
-module {
-    name: "mt6877.init.rc",
-    src: {
-        "init.mt6877.rc": ["init.mt6877.rc"],
-    },
-    product: {
-        "*.rc": {
-            "filename": "init.mt6877.rc",
-            "mount": "vendor",
-            "sub_dir": "etc/init",
-        },
-    },
-    proprietary: true,
-}
+# init.mt6877.rc -- DELIBERATELY ABSENT, and the module below is commented out.
+#
+# The stock tree DOES ship /vendor/etc/init/hw/init.mt6877.rc (1,168 lines), and
+# it was examined. It does not belong in this tree, for three measured reasons:
+#
+#   1. It declares only 7 services, ALL of which exec a /vendor/bin binary:
+#        swap_enable_init  -> /vendor/bin/swap_enable.sh
+#        readahead_init    -> /vendor/bin/swap_enable.sh
+#        bugreport, meta_tst, factory_no_image, osi, fuelgauged(_nvram)
+#      A device/* tree cannot ship /vendor/bin/*; those come from the vendor
+#      tree. Copying this file here would produce a mount full of dangling execs.
+#   2. 56 of its lines are realme/OPPO device policy, not SoC policy --
+#      /sys/kernel/oplus_display/* chown/chmod block (~50 lines), MIDAS
+#      /dev/midas_dev, sys.oplus.bootupgrade cpufreq limiting. Putting those in a
+#      COMMON tree forces them on every mt6877 phone, which is the exact mistake
+#      this tree exists to prevent.
+#   3. It imports two files that are not on the device at all
+#      (init.volte.rc, init.mal.rc), i.e. it is already partly stale even in
+#      stock and depends on the vendor tree's layout.
+#
+# The platform-level content of that file is thin -- boot_dramboost, the cpuset
+# cgroup writes, the sysctl rmem/wmem bumps -- and is cheap to re-add once a
+# build actually asks for it. Shipping a guessed copy now would be the
+# "plausible-looking file with a bootloop attached" the VINTF note warned about.
+#
+# So: NOT writing this file is the correct state. The `mt6877.init.rc` module is
+# kept commented out rather than left dangling in a .bp that references a
+# non-existent source. Uncomment ONLY after the vendor tree exists and the real
+# rc files have been split platform-vs-device.
+
+# module {
+#     name: "mt6877.init.rc",
+#     src: {
+#         "init.mt6877.rc": ["init.mt6877.rc"],
+#     },
+#     product: {
+#         "*.rc": {
+#             "filename": "init.mt6877.rc",
+#             "mount": "vendor",
+#             "sub_dir": "etc/init",
+#         },
+#     },
+#     proprietary: true,
+# }
