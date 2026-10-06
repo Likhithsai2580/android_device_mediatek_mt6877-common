@@ -8,19 +8,24 @@ numbers belong in each device's own tree.
 
 ## Status: scaffolded, NOT buildable
 
-This tree is the shared foundation every mt6877 port was missing. It is real
-work, but it is **not finished**, and the remaining parts are not things that
-can be written by inspection. Two are hard blockers.
+This tree is the shared foundation every mt6877 port was missing. It ships
+measured SoC facts (CPU/GPU/ABI/kernel/AVB/fstab) and a **real VINTF manifest**
+generated from stock. It is **not finished**, and the remaining parts are not
+things that can be written by inspection. Two are hard blockers.
 
+|| piece | state ||
+||---|---||
 | piece | state |
 |---|---|
 | `mt6877.mk` | done — CPU/GPU/ABI facts measured from the DTB |
 | `BoardConfigCommon.mk` | done — AVB/A-B/kernel facts measured from the device |
 | `recovery.fstab` | done — reconstructed from the device's real fstab |
 | `mt6877-common.mk` | done — SoC-level framework packages, HAL set cross-checked |
-| `Android.bp` | scaffolded, **manifest deliberately empty** (see below) |
 | `Android.mk` | **empty on purpose** |
 | `lineage.dependencies` | lists only real repos; names the missing ones |
+| `vintf/manifest.xml` | **done** — 18 fragments merged verbatim from stock A15 |
+| `Android.bp` | `mt6877.vintf` bound to the real manifest |
+| `init.mt6877.rc` | not present — `Android.bp` still references it; see next steps
 
 ## The two walls
 
@@ -65,35 +70,51 @@ and (usually the real work) **sepolicy**. Sepolicy is the part that cannot be
 guessed: wrong policy rules produce a bootloop, not a build error, and the
 denial you then debug may be unrelated-looking.
 
-## Why `Android.bp` has no VINTF manifest
+## VINTF manifest — now present, generated from stock
 
-It looks like an oversight and is not. A VINTF manifest that declares a HAL the
-device does not ship causes a boot-time HAL crash; one that omits a HAL it does
-ship causes immediate service-not-found. Both surface as unexplained boot
-failures.
+`Android.bp` was deliberately left with an empty manifest at scaffold time, with
+this reasoning: a VINTF manifest that declares a HAL the device does not ship
+causes a boot-time HAL crash, and one that omits a HAL it does ship causes an
+immediate service-not-found. Both surface as unexplained boot failures.
 
-The content is derivable — `ls /vendor/lib64/hw` and
-`/vendor/etc/vintf/manifest.xml` on a stock device give the exact list — but it
-is **per device**, because which HALs are enabled is a vendor decision, not an
-SoC fact. Writing a plausible-looking manifest now would be a guess with a
-bootloop attached. `Android.bp` carries the module definitions and a TODO
-saying how to fill them.
+That reasoning was right. The remedy was to **derive the manifest from a stock
+device rather than write it by hand** — which is now done.
+`vintf/manifest.xml` is a verbatim merge of the 18 vendor-side fragments pulled
+from `/vendor/etc/vintf/manifest/*.xml` on a realme 11 Pro 5G A15 stock device.
+Every `<hal>` block is copied as-is from its source file (name / version /
+fqname / interface / format). Nothing was invented, nothing was dropped.
+
+The split it embodies is the platform-vs-device one the warning was really about:
+  - **This file** carries only the SoC-level HALs — MediaTek-named ones and the
+    standard AOSP HALs the mt6877 provides (gnss, light, graphics, audio.core,
+    thermal, memtrack, power, LBS, APU, engineermode).
+  - **Excluded on purpose**: `com.oplus.*` and realme HALs, and
+    `android.hardware.camera.provider` (stock uses its own proprietary provider).
+    Those live in `/odm/etc/vintf/manifest` — they are DEVICE-level, so a device
+    tree supplies them, never this common manifest.
+
+`Android.bp` now binds `mt6877.vintf` to that manifest. `init.mt6877.rc` is still
+referenced by the same `.bp` but intentionally missing — see next steps.
 
 ## Facts this tree is built on
 
-From the realme 11 Pro 5G (RMX3771 / RE58B8L1 / project 22712) stock A13
-firmware:
+From the realme 11 Pro 5G (RMX3771 / RE58B8L1 / project 22712). The empirical
+facts below were first measured on the live **A15** device (running
+`RMX3771_15.0.0.600(EX01)`, kernel `6.6.30-android15-8-o-gbf7a50923577-4k`),
+cross-checked against the recovered A13 config and the published 6.6 source:
 
 ```
 CPU        6x arm,cortex-a55 (cpu@000..005) + 2x arm,cortex-a76 (cpu@100,101)
-GPU        mali@13000000
-Buses      i2c0..i2c11, spi0..spi7, uart, mmc0-2, usbc, dsi, dsi_te, ufs
+GPU        mali@13000000  (arm,mali-valhall -> Valhall arch, NOT Midgard)
+Buses      i2c0..i2c11 (12), spi0..spi7 (8), uart, mmc0-2, usbc, dsi, dsi_te, ufs
 Power      scp@10500000 (82 refs), cpufreq, dvfs nodes, full thermal bank
 Crypto     pwrap/mt6359-pmic, spmi, mt6315
-Storage    logical partitions in `super`, classic A/B, EROFS stock images
+Storage    logical partitions inside `super`, classic A/B (not virtual-A/B),
+           EROFS on the stock system; ext4 on the GSI boot test
+Kernel     GKI, Linux 6.6.30, boot header v4, ramdisk in vendor_boot
 ```
 
-The 6×A55 + 2×A76 configuration is worth flagging: it is *not* the 2×A78
+The 6x A55 + 2x A76 configuration is worth flagging: it is *not* the 2x A78
 variant some Dimensity 7050 SKUs use. That was read out of the DTB rather than
 assumed from a spec sheet.
 
@@ -112,14 +133,24 @@ realme security storage, device-specific.
 
 ## Suggested next steps, in order
 
-1. **Boot a GSI on the device.** Cheapest high-information test available:
-   stock kernel + the device tree we already validated. If it boots, the
-   remaining work is userspace. If not, the kernel/DT path is the problem and
-   everything here is solving the wrong thing.
-2. **Build `vendor_mediatek_mt6877-common`.** Start with the fstab and the
-   mk files; sepolicy last, and only what the build actually asks for.
-3. **Generate the VINTF manifest** from a stock device, not by hand.
-4. **Attempt a build and let it drive.** The missing pieces are discoverable
+1. **(DONE)** Boot a GSI on the device — stock kernel + the device tree we
+   validated. **Result: passed.** TrebleDroid A15 booted on the stock kernel +
+   stock DT, with display, touch, both SIMs, LTE, audio, Bluetooth, Wi-Fi **and
+   camera** all working. See `docs/GSI_BOOT_TEST.md`. Conclusion: the
+   kernel/DT path is sound; the remaining work is userspace.
+2. **Generate the VINTF manifest** from a stock device — **done** (this tree's
+   `vintf/manifest.xml`). What remains is the per-device odm fragments, which
+   the RMX3771 device tree supplies.
+3. **Provide `init.mt6877.rc`** or remove its reference from `Android.bp`. The
+   stock early-init is the source; an empty stub is enough to unblock a first
+   build and can be filled from `vendor/etc/init/*.rc` pulled from the device.
+4. **Build `vendor_mediatek_mt6877-common`.** Start with the fstab and the mk
+   files; sepolicy last, and only what the build actually asks for.
+5. **Port the device tree (RMX3771).** With the platform tree solid, this is the
+   device-specific bits: partition sizes, the `my_*` regional layout, odm VINTF
+   fragments (camera provider, sensors), and the `cust.dtsi` nodes shipped as a
+   prebuilt DTBO from the stock firmware.
+6. **Attempt a build and let it drive.** The missing pieces are discoverable
    from build output; guessing them is how a tree ends up subtly wrong.
 
 ## Research notes (checked against upstream, worth knowing before starting)

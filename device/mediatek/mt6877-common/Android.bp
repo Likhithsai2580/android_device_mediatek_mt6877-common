@@ -4,21 +4,11 @@ include $(CLEAR_VARS)
 
 # VINTF fragment shipped with the platform. Only declares the SoC-level
 # interfaces that are true of every mt6877 device; a device tree adds its own
-# fragments for camera/sensors.
+# fragments for camera/sensors (com.oplus.*, realme camera provider).
 #
-# INTENTIONALLY NOT WRITTEN YET. A VINTF manifest that declares a HAL the
-# device does not ship causes a boot-time HAL crash, and one that omits a HAL
-# the device does ship causes an immediate service-not-found. Both look like
-# "random" boot failures and cost days to diagnose.
-#
-# The correct content is derivable -- `ls /vendor/lib64/hw` plus
-# `/vendor/etc/vintf/manifest.xml` from a stock device gives the exact list --
-# but it is derived per DEVICE, not per SoC, because which HALs are enabled is
-# a vendor decision. Writing a plausible-looking manifest now would be a guess
-# with a bootloop attached.
-#
-# TODO(porter): generate from the device's stock manifest, then split into
-# platform-level (this file) and device-level fragments.
+# NOW POPULATED: manifest.xml is a verbatim merge of the 18 vendor-side fragments
+# pulled from a realme 11 Pro 5G stock A15 device (/vendor/etc/vintf/manifest).
+# Each HAL block is copied as-is from its source file -- not invented.
 
 module {
     name: "mt6877.vintf",

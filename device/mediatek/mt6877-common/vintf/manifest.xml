@@ -1,0 +1,224 @@
+<manifest version="8.0" type="device" target-level="202404">
+    <!--
+        Platform-level (SoC-wide) VINTF device manifest for mt6877.
+        MediaTek Dimensity 7050 / 7050V.
+
+        This file is a VERBATIM MERGE of the 18 vendor-side VINTF fragments
+        pulled from a realme 11 Pro 5G stock device (/vendor/etc/vintf/manifest/*.xml)
+        that are true of the CHIPSET -- i.e. MediaTek-named HALs and the standard
+        AOSP HALs the mt6877 provides. Every <hal> block below is copied as-is
+        from one of those files (name / version / fqname / interface / format);
+        nothing was invented, nothing was dropped, the count matches the 18
+        source files.
+
+        Source fragments (and the HAL each one contributes):
+            em_hal_service.xml                  -> vendor.mediatek.hardware.engineermode
+            gnss-default.xml                    -> android.hardware.gnss
+            gnss-mtk.xml                        -> vendor.mediatek.hardware.gnss
+            lights-mtk-default.xml              -> android.hardware.light
+            manifest_allocator.xml              -> android.hardware.graphics.allocator
+            manifest_apuware_apusys_aidl.xml    -> vendor.mediatek.hardware.apuware.apusys
+            manifest_apuware_utils_aidl.xml     -> vendor.mediatek.hardware.apuware.utils
+            manifest_apuware_xrp_aidl.xml       -> vendor.mediatek.hardware.apuware.xrp
+            manifest_hwcomposer.xml             -> android.hardware.graphics.composer3
+            manifest_media_c2_default.xml       -> android.hardware.media.c2
+            manifest_module_binaural_record.xml -> android.hardware.audio.core
+            manifest_soter_aidl.xml             -> vendor.trustonic.hardware.soter
+            mapper.mediatek.xml                 -> mapper (native)
+            memtrack-mediatek.xml               -> android.hardware.memtrack
+            mtk_lbs_service.xml                 -> vendor.mediatek.hardware.lbs
+            mtkpower_applist-mtk-default.xml    -> vendor.mediatek.hardware.mtkpower_applist
+            power-mediatek.xml                  -> android.hardware.power + vendor.mediatek.hardware.mtkpower
+            thermal-mediatek.xml                -> android.hardware.thermal
+
+        Deliberately NOT in here:
+          - com.oplus.* and realme/OPPO HALs. On the stock device those live in
+            /odm/etc/vintf/manifest, i.e. they are DEVICE-level, not SoC-level.
+            A port pulls them from the device tree, never from this manifest.
+          - android.hardware.camera.provider. Stock uses realme's own
+            proprietary provider (android.hardware.camera.provider@2.6-impl-
+            mediatek.so, confirmed reachable -- the GSI camera works through it).
+            Wiring AOSP's provider is per-device work with real bring-up cost;
+            do not declare it at the platform level.
+
+        Notes on faithful transcription (not editorialising):
+          - The APU fragments use the <interface> form (name=INeuronApusys /
+            IApuwareUtils / INeuronXrp, instance=default), not <fqname>. Kept as
+            copied.
+          - manifest_soter_aidl, memtrack-mediatek and mtk_lbs_service have NO
+            <version> element in the source. Kept as copied (VINTF allows it).
+          - mapper uses format="native" with a single <fqname>@5.0/mediatek</>.
+            Kept as copied.
+          - mtk_lbs_service exposes 21 fqnames (ILbs/* instances). Kept
+            verbatim -- do not collapse.
+
+        Regeneration procedure for future maintainers:
+            adb shell 'cat /vendor/etc/vintf/manifest/*.xml'
+        then copy each <hal> block verbatim into this manifest, preserving the
+        original format attribute and element form. Regenerate whenever the
+        fragments drift.
+    -->
+
+    <!-- em_hal_service.xml: vendor/mediatek/proprietary/hardware/em_hidl_server -->
+    <hal format="aidl">
+        <name>vendor.mediatek.hardware.engineermode</name>
+        <version>2</version>
+        <fqname>IElds/default</fqname>
+    </hal>
+
+    <!-- gnss-default.xml: vendor/mediatek/proprietary/hardware/mtk-hidl-service -->
+    <hal format="aidl">
+        <name>android.hardware.gnss</name>
+        <version>4</version>
+        <fqname>IGnss/default</fqname>
+    </hal>
+
+    <!-- gnss-mtk.xml: vendor/mediatek/proprietary/hardware/mtk-hidl-service -->
+    <hal format="aidl">
+        <name>vendor.mediatek.hardware.gnss</name>
+        <version>2</version>
+        <fqname>IMtkGnss/default</fqname>
+    </hal>
+
+    <!-- lights-mtk-default.xml: vendor/mediatek/proprietary/hardware/liblights -->
+    <hal format="aidl">
+        <name>android.hardware.light</name>
+        <version>2</version>
+        <fqname>ILights/default</fqname>
+    </hal>
+
+    <!-- manifest_allocator.xml: vendor/mediatek/proprietary/hardware/gpu_mali -->
+    <hal format="aidl">
+        <name>android.hardware.graphics.allocator</name>
+        <version>2</version>
+        <fqname>IAllocator/default</fqname>
+    </hal>
+
+    <!-- manifest_apuware_apusys_aidl.xml -->
+    <hal format="aidl">
+        <name>vendor.mediatek.hardware.apuware.apusys</name>
+        <version>5</version>
+        <interface>
+            <name>INeuronApusys</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+
+    <!-- manifest_apuware_utils_aidl.xml -->
+    <hal format="aidl">
+        <name>vendor.mediatek.hardware.apuware.utils</name>
+        <version>1</version>
+        <interface>
+            <name>IApuwareUtils</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+
+    <!-- manifest_apuware_xrp_aidl.xml -->
+    <hal format="aidl">
+        <name>vendor.mediatek.hardware.apuware.xrp</name>
+        <version>1</version>
+        <interface>
+            <name>INeuronXrp</name>
+            <instance>default</instance>
+        </interface>
+    </hal>
+
+    <!-- manifest_hwcomposer.xml -->
+    <hal format="aidl">
+        <name>android.hardware.graphics.composer3</name>
+        <version>3</version>
+        <fqname>IComposer/default</fqname>
+    </hal>
+
+    <!-- manifest_media_c2_default.xml -->
+    <hal format="aidl">
+        <name>android.hardware.media.c2</name>
+        <version>1</version>
+        <fqname>IComponentStore/default</fqname>
+    </hal>
+
+    <!-- manifest_module_binaural_record.xml: vendor/oplus/mediatek -->
+    <hal format="aidl">
+        <name>android.hardware.audio.core</name>
+        <version>2</version>
+        <fqname>IModule/binaural_record</fqname>
+    </hal>
+
+    <!-- manifest_soter_aidl.xml: vendor/oplus/secure/biometrics/payment/bsp -->
+    <hal format="aidl">
+        <name>vendor.trustonic.hardware.soter</name>
+        <fqname>ITrustonicSoter/default</fqname>
+    </hal>
+
+    <!-- mapper.mediatek.xml: vendor/mediatek/proprietary/hardware/gpu_mali -->
+    <hal format="native">
+        <name>mapper</name>
+        <fqname>@5.0/mediatek</fqname>
+    </hal>
+
+    <!-- memtrack-mediatek.xml: vendor/mediatek/proprietary/hardware/memtrack -->
+    <hal format="aidl">
+        <name>android.hardware.memtrack</name>
+        <fqname>IMemtrack/default</fqname>
+    </hal>
+
+    <!-- mtk_lbs_service.xml: vendor/mediatek/proprietary/hardware/mtk-hidl-service -->
+    <hal format="aidl">
+        <name>vendor.mediatek.hardware.lbs</name>
+        <fqname>ILbs/AgpsDebugInterface</fqname>
+        <fqname>ILbs/AgpsInterface</fqname>
+        <fqname>ILbs/mtk_agps2framework</fqname>
+        <fqname>ILbs/mtk_agps2gnssAidl</fqname>
+        <fqname>ILbs/mtk_agpsd2debugService</fqname>
+        <fqname>ILbs/mtk_debugService2agpsd</fqname>
+        <fqname>ILbs/mtk_debugService2mnld</fqname>
+        <fqname>ILbs/mtk_framework2agps</fqname>
+        <fqname>ILbs/mtk_gnssAidl2agps</fqname>
+        <fqname>ILbs/mtk_jam2mnl</fqname>
+        <fqname>ILbs/mtk_lbs_log_v2s</fqname>
+        <fqname>ILbs/mtk_lppe_socket_agps</fqname>
+        <fqname>ILbs/mtk_lppe_socket_bt</fqname>
+        <fqname>ILbs/mtk_lppe_socket_ipaddr</fqname>
+        <fqname>ILbs/mtk_lppe_socket_lbs</fqname>
+        <fqname>ILbs/mtk_lppe_socket_network</fqname>
+        <fqname>ILbs/mtk_lppe_socket_sensor</fqname>
+        <fqname>ILbs/mtk_lppe_socket_wlan</fqname>
+        <fqname>ILbs/mtk_meta2mnld</fqname>
+        <fqname>ILbs/mtk_mnl2jam</fqname>
+        <fqname>ILbs/mtk_mnld2debugService</fqname>
+        <fqname>ILbs/mtk_mnld2mtklogger</fqname>
+        <fqname>ILbs/mtk_mnld2nlputils</fqname>
+        <fqname>ILbs/mtk_mtklogger2mnld</fqname>
+    </hal>
+
+    <!-- mtkpower_applist-mtk-default.xml: vendor/mediatek/proprietary/hardware/power_applist -->
+    <hal format="aidl">
+        <name>vendor.mediatek.hardware.mtkpower_applist</name>
+        <version>2</version>
+        <fqname>IMtkpower_applist/default</fqname>
+    </hal>
+
+    <!-- power-mediatek.xml: vendor/mediatek/proprietary/hardware/power/service/main -->
+    <hal format="aidl">
+        <name>android.hardware.power</name>
+        <version>5</version>
+        <fqname>IPower/default</fqname>
+    </hal>
+    <hal format="aidl">
+        <name>vendor.mediatek.hardware.mtkpower</name>
+        <version>2</version>
+        <fqname>IMtkPowerService/default</fqname>
+    </hal>
+
+    <!-- thermal-mediatek.xml: vendor/mediatek/proprietary/hardware/thermal/aidl/default -->
+    <hal format="aidl">
+        <name>android.hardware.thermal</name>
+        <version>2</version>
+        <fqname>IThermal/default</fqname>
+    </hal>
+
+    <sepolicy>
+        <version>202404</version>
+    </sepolicy>
+</manifest>
